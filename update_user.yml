@@ -1,6 +1,6 @@
 ---
 - name: Allow ansible_user to run sudo commands without a password
-  hosts: all
+  hosts: pies
   become: yes
   tasks:
     - name: Add ansible_user to sudoers with NOPASSWD
