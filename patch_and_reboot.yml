@@ -1,7 +1,7 @@
 ---
 - name: Patch and reboot servers
   hosts: pies
-  remote_user: root
+  become: yes
   tasks:
     - name: Update packages
       ansible.builtin.apt:
