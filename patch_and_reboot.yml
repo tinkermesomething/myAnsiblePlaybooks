@@ -9,10 +9,9 @@
         update_cache: yes
         cache_valid_time: 86400
 
-    - name: Upgrade all packages to the latest version
-      ansible.builtin.apt:
-        name: "*"
-        state: latest
+    - name: Run apt upgrade -y
+      ansible.builtin.shell:
+        cmd: sudo apt upgrade -y
 
     - name: Reboot server if required
       ansible.builtin.reboot:
