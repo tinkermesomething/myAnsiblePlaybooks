@@ -3,7 +3,7 @@
 #https://github.com/adithyakhamithkar/ansible-playbooks/blob/master/install-security-updates.yml
 #
 ---
-- hosts: '{{inventory}}'
+- hosts: pies
   become: yes
 
   tasks:
