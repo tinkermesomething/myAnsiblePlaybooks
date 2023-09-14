@@ -1,13 +1,17 @@
 ---
-- name: Patch and reboot servers
-  hosts: pies
+- name: Update and upgrade packages on Ubuntu/Debian servers
+  hosts: all
   become: true
   tasks:
-    - name: Update and upgrade apt packages
-      apt:
-        upgrade: yes
+    - name: Update apt cache
+      ansible.builtin.apt:
         update_cache: yes
         cache_valid_time: 86400
+
+    - name: Upgrade all packages to the latest version
+      ansible.builtin.apt:
+        name: "*"
+        state: latest
 
     - name: Reboot server if required
       ansible.builtin.reboot:
@@ -17,3 +21,4 @@
         pre_reboot_delay: 0
         post_reboot_delay: 30
         test_command: uptime
+
