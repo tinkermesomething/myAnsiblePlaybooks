@@ -1,0 +1,21 @@
+---
+- name: Update Mailcow on localhost
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Ensure git is installed
+      ansible.builtin.package:
+        name: git
+        state: present
+
+    - name: Clone Mailcow repository if not present
+      ansible.builtin.git:
+        repo: https://github.com/mailcow/mailcow-dockerized.git
+        dest: /path/to/mailcow-dockerized
+        update: yes
+
+    - name: Run Mailcow update script
+      ansible.builtin.command:
+        cmd: ./update.sh
+        chdir: /path/to/mailcow-dockerized
+        creates: /path/to/mailcow-dockerized/data/conf/rspamd/override.d/worker-proxy.inc
