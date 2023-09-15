@@ -1,17 +1,12 @@
 ---
 - name: Update and upgrade packages on Ubuntu/Debian servers
-  hosts: dashy
+  hosts: pies
   become: true
   tasks:
     - name: Update apt cache
       ansible.builtin.apt:
         update_cache: yes
         cache_valid_time: 86400
-
-    - name: Upgrade all packages on servers
-      apt: 
-        name: "*"
-        state: latest
 
     - name: Reboot server if required
       ansible.builtin.reboot:
