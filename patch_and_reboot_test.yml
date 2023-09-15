@@ -1,6 +1,6 @@
 ---
 - name: Update and upgrade packages on Ubuntu/Debian servers
-  hosts: pies
+  hosts: dashy
   become: true
   become_user: root
   tasks:
@@ -9,9 +9,10 @@
         update_cache: yes
         cache_valid_time: 86400
 
-    - name: Run apt upgrade -y
-      ansible.builtin.shell:
-        cmd: sudo apt upgrade -y
+    - name: Upgrade all packages on servers
+      apt: 
+        name: "*"
+        state: latest
 
     - name: Reboot server if required
       ansible.builtin.reboot:
