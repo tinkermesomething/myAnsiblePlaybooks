@@ -1,11 +1,11 @@
 ---
-- name: Update and upgrade packages on Ubuntu/Debian servers
+- name: Checks if servers needs reboot post patching (kernel)
   hosts: pies
   become: true
   become_user: root
   tasks:
-    - name: Reboot box if kernel/libs updated and requested by the system
-      shell: sleep 10 && /sbin/shutdown -r now 'Rebooting box to update system libs/kernel as needed'
+    - name: Reboot box if requested by the system
+      shell: sleep 10 && /sbin/shutdown -r now 'Rebooting box to update system as needed'
       args:
         removes: /var/run/reboot-required
       async: 300
