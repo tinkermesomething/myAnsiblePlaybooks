@@ -1,0 +1,8 @@
+---
+- name: Update and upgrade packages unattended
+  hosts: all
+  become: yes
+  tasks:
+    - name: Run unattended apt update and apt upgrade
+      ansible.builtin.shell:
+        cmd: DEBIAN_FRONTEND=noninteractive apt update && DEBIAN_FRONTEND=noninteractive apt upgrade -y
