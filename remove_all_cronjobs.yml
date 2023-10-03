@@ -1,0 +1,19 @@
+---
+- name: Remove all cron jobs for all users
+  hosts: all
+  become: yes
+  tasks:
+    - name: Get list of users
+      ansible.builtin.getent:
+        database: passwd
+      register: getent_passwd
+
+    - name: Set list of users
+      ansible.builtin.set_fact:
+        users: "{{ getent_passwd | dict2items | json_query('[*].key') }}"
+
+    - name: Remove all cron jobs for each user
+      ansible.builtin.shell:
+        cmd: crontab -r -u {{ item }}
+      loop: "{{ users }}"
+      ignore_errors: yes
