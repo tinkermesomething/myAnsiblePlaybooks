@@ -1,9 +1,13 @@
 ---
-- name: Update and upgrade packages unattended
+- name: Update and upgrade packages on Ubuntu servers
   hosts: all
-  become: yes
-  become_method: sudo  # or su, or another method as required
+  become: true
   tasks:
-    - name: Run unattended apt update and apt upgrade
-      ansible.builtin.shell:
-        cmd: DEBIAN_FRONTEND=noninteractive apt update && DEBIAN_FRONTEND=noninteractive apt upgrade -y
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade all packages
+      ansible.builtin.apt:
+        upgrade: safe
