@@ -3,8 +3,7 @@
   hosts: pies
   become: true
   tasks:
-   - name: apt update
-     ansible.builtin.apt:
-       update_cache: yes
-
+   - name: Run apt update 
+      ansible.builtin.command:
+        cmd: sudo apt update -y
   
