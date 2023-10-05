@@ -3,19 +3,27 @@
   hosts: pies
   become: true
   tasks:
-    - name: Update apt cache
-      ansible.builtin.apt:
-        update_cache: yes
-        cache_valid_time: 3600
+   - name: apt update
+      ansible.builtin.command:
+        cmd: sudo apt update -y
+  
+   - name: apt upgrade
+      ansible.builtin.command:
+        cmd: sudo DEBIAN_FRONTEND=noninteractive apt-get -y upgrade
+    
+    #- name: Update apt cache
+     # ansible.builtin.apt:
+     #   update_cache: yes
+     #   cache_valid_time: 3600
 
-    - name: Upgrade all packages
-      ansible.builtin.apt:
-        upgrade: safe
+    #- name: Upgrade all packages
+     # ansible.builtin.apt:
+      #  upgrade: safe
         
-    - name: Perform a dist-upgrade.
-      ansible.builtin.apt:
-        upgrade: dist
-        update_cache: yes
+    #- name: Perform a dist-upgrade.
+     # ansible.builtin.apt:
+      #  upgrade: dist
+       # update_cache: yes
 
     - name: Check if a reboot is required.
       ansible.builtin.stat:
