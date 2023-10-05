@@ -2,6 +2,7 @@
 - name: Update and upgrade packages unattended
   hosts: all
   become: yes
+  become_method: sudo  # or su, or another method as required
   tasks:
     - name: Run unattended apt update and apt upgrade
       ansible.builtin.shell:
