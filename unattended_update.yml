@@ -4,23 +4,25 @@
   become: true
   tasks:
    - name: apt update
-      ansible.builtin.command:
-        cmd: sudo apt update -y
-  
+     ansible.builtin.apt:
+       update_cache: yes
+
    - name: apt upgrade
-      ansible.builtin.command:
-        cmd: sudo DEBIAN_FRONTEND=noninteractive apt-get -y upgrade
-        
-   - name: Check if a reboot is required.
-      ansible.builtin.stat:
-        path: /var/run/reboot-required
-        get_md5: no
-      register: reboot_required_file
+     environment:
+       DEBIAN_FRONTEND: noninteractive
+     ansible.builtin.apt:
+       upgrade: 'yes'
 
-   - name: Reboot the server (if required).
-      ansible.builtin.reboot:
-      when: reboot_required_file.stat.exists == true
+   - name: Check if a reboot is required
+     ansible.builtin.stat:
+       path: /var/run/reboot-required
+       get_md5: no
+     register: reboot_required_file
 
-   - name: Remove dependencies that are no longer required.
-      ansible.builtin.apt:
-        autoremove: yes
+   - name: Reboot the server (if required)
+     ansible.builtin.reboot:
+     when: reboot_required_file.stat.exists == true
+
+   - name: Remove dependencies that are no longer required
+     ansible.builtin.apt:
+       autoremove: yes
