@@ -2,29 +2,29 @@
 - hosts: pies
   gather_facts: yes
   become: yes
+  become_user: root
 
   tasks:
-  - name: Update and upgrade apt packages
-    apt:
-        upgrade: 'yes'
-        update_cache: 'yes'
+    - name: Update and upgrade all packages
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: yes
 
-  - name: Check if a reboot is required.
-    ansible.builtin.stat:
+    - name: Check if a reboot is required
+      ansible.builtin.stat:
         path: /var/run/reboot-required
-        get_md5: no
-    register: reboot_required_file
+      register: reboot_required_file
 
-  - name: Reboot the server (if required).
-    ansible.builtin.reboot:
+    - name: Reboot the server if required
+      ansible.builtin.reboot:
       when: reboot_required_file.stat.exists == true
 
-  - name: Remove dependencies that are no longer required.
-    ansible.builtin.apt:
+    - name: Remove dependencies that are no longer required.
+      ansible.builtin.apt:
         autoremove: yes
 
 
-  - name: Update and upgrade apt packages
-    apt:
+    - name: Update and upgrade apt packages
+      apt:
         upgrade: 'yes'
         update_cache: 'yes'
