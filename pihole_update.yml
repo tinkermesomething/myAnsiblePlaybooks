@@ -11,12 +11,6 @@
         done
       become: yes
 
-    - name: Remove dpkg lock-frontend
-      ansible.builtin.file:
-        path: /var/lib/dpkg/lock-frontend
-        state: absent
-      become: yes
-
     - name: Update Pi-hole
       ansible.builtin.command: pihole -up
       
