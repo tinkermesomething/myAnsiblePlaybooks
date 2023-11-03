@@ -1,6 +1,6 @@
 ---
 - name: Update Ubuntu servers
-  hosts: pies
+  hosts: localhost
   become: yes
   become_user: root
   tasks:
