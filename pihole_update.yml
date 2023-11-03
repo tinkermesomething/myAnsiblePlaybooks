@@ -6,3 +6,16 @@
   tasks:
     - name: Update Pi-hole
       ansible.builtin.command: pihole -up
+      
+    - name: Update package list
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade packages
+      apt:
+        upgrade: dist
+
+    - name: Clean up unnecessary packages
+      apt:
+        autoremove: yes
