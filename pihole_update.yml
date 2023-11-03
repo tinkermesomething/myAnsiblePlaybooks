@@ -1,8 +1,6 @@
 ---
 - name: Update Pi-hole
   hosts: pihole
-  vars_files:
-    - /etc/ansible/credentials.yml
   become: yes
   become_method: sudo
   become_user: root 
