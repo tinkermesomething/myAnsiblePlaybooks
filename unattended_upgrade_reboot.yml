@@ -1,14 +1,35 @@
 ---
-- hosts: pies
-  gather_facts: yes
+- name: Update, Upgrade and Reboot all ubuntu servers on Pi
+  hosts: pies
   become: yes
-  become_user: root
-
+  become_method: sudo
+  become_user: root 
   tasks:
-    - name: Update and upgrade all packages
-      ansible.builtin.apt:
-        upgrade: dist
+    - name: Ensure no unattended upgrades are running
+      ansible.builtin.shell: |
+        while pgrep unattended; do
+          sleep 10
+        done
+      become: yes
+
+    - name: Remove dpkg lock-frontend
+      ansible.builtin.file:
+        path: /var/lib/dpkg/lock-frontend
+        state: absent
+      become: yes
+      
+    - name: Update package list
+      apt:
         update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade packages
+      apt:
+        upgrade: dist
+
+    - name: Clean up unnecessary packages
+      apt:
+        autoremove: yes
 
     - name: Check if a reboot is required
       ansible.builtin.stat:
@@ -18,13 +39,3 @@
     - name: Reboot the server if required
       ansible.builtin.reboot:
       when: reboot_required_file.stat.exists == true
-
-    - name: Remove dependencies that are no longer required.
-      ansible.builtin.apt:
-        autoremove: yes
-
-
-    - name: Update and upgrade apt packages
-      apt:
-        upgrade: 'yes'
-        update_cache: 'yes'
