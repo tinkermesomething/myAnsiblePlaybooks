@@ -2,7 +2,7 @@
 - name: Update Pi-hole
   hosts: pihole
   become: yes
-  remote_user: root
+  become_method: sudo 
   tasks:
     - name: Update Pi-hole
       ansible.builtin.command: pihole -up
