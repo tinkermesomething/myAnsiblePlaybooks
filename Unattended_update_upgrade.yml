@@ -5,19 +5,6 @@
   become_method: sudo
   become_user: root 
   tasks:
-    - name: Ensure no unattended upgrades are running
-      ansible.builtin.shell: |
-        while pgrep unattended; do
-          sleep 10
-        done
-      become: yes
-
-    - name: Remove dpkg lock-frontend
-      ansible.builtin.file:
-        path: /var/lib/dpkg/lock-frontend
-        state: absent
-      become: yes
-      
     - name: Update package list
       apt:
         update_cache: yes
