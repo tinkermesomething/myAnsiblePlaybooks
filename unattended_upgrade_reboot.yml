@@ -1,6 +1,6 @@
 ---
 - name: Update, Upgrade and Reboot all ubuntu servers on Pi
-  hosts: pies
+  hosts: host
   become: yes
   become_method: sudo
   become_user: root 
