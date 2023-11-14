@@ -4,12 +4,7 @@
   become: yes
   become_method: sudo
   become_user: root 
-  tasks:      
-    - name: Remove dpkg lock-frontend
-      ansible.builtin.file:
-        path: /var/lib/dpkg/lock-frontend
-        state: absent
-      become: yes
+  tasks:   
       
     - name: Update package list
       apt:
