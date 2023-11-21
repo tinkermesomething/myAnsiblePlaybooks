@@ -1,0 +1,25 @@
+---
+- hosts: host
+  become: yes
+  become_method: sudo
+  become_user: root 
+  tasks:
+    - name: Ensure nala is installed
+      ansible.builtin.package:
+        name: nala
+        state: present
+
+    - name: Run nala update and upgrade
+      ansible.builtin.command:
+        cmd: nala update --assume-yes && nala upgrade --assume-yes
+        warn: no
+
+    - name: Check if a reboot is needed
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+
+    - name: Reboot the server if required
+      ansible.builtin.reboot:
+      when: reboot_required_file.stat.exists == true
+...
