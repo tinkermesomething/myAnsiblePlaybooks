@@ -11,7 +11,7 @@
 
     - name: Run nala update and upgrade
       ansible.builtin.command:
-        cmd: nala update --assume-yes && nala upgrade --assume-yes
+        cmd: nala update && nala upgrade
         warn: no
 
     - name: Check if a reboot is needed
