@@ -9,9 +9,14 @@
         name: nala
         state: present
 
-    - name: Run nala update and upgrade
+    - name: Run nala update 
       ansible.builtin.command:
-        cmd: nala update && nala upgrade
+        cmd: nala update
+        warn: no
+        
+    - name: Run nala upgrade
+      ansible.builtin.command:
+        cmd: nala upgrade
         warn: no
 
     - name: Check if a reboot is needed
