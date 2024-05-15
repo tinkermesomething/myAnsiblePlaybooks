@@ -1,16 +1,10 @@
 ---
 - name: Update Pi-hole
-  hosts: pihole
+  hosts: host
   become: yes
   become_method: sudo
   become_user: root 
   tasks:
-    - name: Ensure no unattended upgrades are running
-      ansible.builtin.shell: |
-        while pgrep unattended; do
-          sleep 10
-        done
-      become: yes
 
     - name: Remove dpkg lock-frontend
       ansible.builtin.file:
@@ -20,25 +14,4 @@
 
     - name: Update Pi-hole
       ansible.builtin.command: pihole -up
-      
-    - name: Update package list
-      apt:
-        update_cache: yes
-        cache_valid_time: 3600
 
-    - name: Upgrade packages
-      apt:
-        upgrade: dist
-
-    - name: Clean up unnecessary packages
-      apt:
-        autoremove: yes
-
-    - name: Check if a reboot is required
-      ansible.builtin.stat:
-        path: /var/run/reboot-required
-      register: reboot_required_file
-
-    - name: Reboot the server if required
-      ansible.builtin.reboot:
-      when: reboot_required_file.stat.exists == true
