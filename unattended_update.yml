@@ -1,8 +1,43 @@
 ---
-- name: Update and upgrade packages on Ubuntu servers
-  hosts: pies
-  become: true
+- name: Update and list availalbe updates
+  hosts: host
+  become: yes
+  become_method: su
+  become_user: root
   tasks:
-   - name: Run apt update 
-     ansible.builtin.command:
-        cmd: sudo apt update -y
+
+  - name: Remove dpkg lock-frontend
+    ansible.builtin.file:
+      path: /var/lib/dpkg/lock-frontend
+      state: absent
+      become: yes
+  
+  - name: Run apt update 
+    ansible.builtin.command:
+      cmd: sudo apt update -y
+        
+  - name: Get count of upgradable packages
+    shell: apt list --upgradable 2>/dev/null | grep -c upgradable
+    register: upgradable_count
+    changed_when: false
+    failed_when: upgradable_count.rc != 0 and upgradable_count.stdout != "0"
+
+  - name: Display number of packages to be updated
+    debug:
+      msg: "Number of packages to be updated: {{ upgradable_count.stdout }}"
+    
+  - name: Get list of upgradable packages
+    shell: apt list --upgradable 2>/dev/null
+    register: upgradable_packages
+    changed_when: false
+
+  - name: Display list of packages to be updated
+    debug:
+       msg: "{{ upgradable_packages.stdout_lines }}"
+    when: upgradable_count.stdout != "0"
+
+  - name: Display message when no updates are available
+    debug:
+       msg: "No new updates to install"
+    when: upgradable_count.stdout == "0"
+
