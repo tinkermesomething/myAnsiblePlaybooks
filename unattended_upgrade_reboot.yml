@@ -1,8 +1,8 @@
 ---
-- name: Update, Upgrade and Reboot all ubuntu servers on Pi
+- name: Update, Upgrade and Reboot all ubuntu servers
   hosts: host
   become: yes
-  become_method: sudo
+  become_method: su
   become_user: root 
   tasks:   
     - name: Ensure no unattended upgrades are running
@@ -22,6 +22,31 @@
       apt:
         update_cache: yes
         cache_valid_time: 3600
+
+    - name: Get count of upgradable packages
+      shell: apt list --upgradable 2>/dev/null | grep -c upgradable
+      register: upgradable_count
+      changed_when: false
+      failed_when: upgradable_count.rc != 0 and upgradable_count.stdout != "0"
+
+    - name: Display number of packages to be updated
+      debug:
+        msg: "Number of packages to be updated: {{ upgradable_count.stdout }}"
+    
+    - name: Get list of upgradable packages
+      shell: apt list --upgradable 2>/dev/null
+      register: upgradable_packages
+      changed_when: false
+
+    - name: Display list of packages to be updated
+      debug:
+        msg: "{{ upgradable_packages.stdout_lines }}"
+      when: upgradable_count.stdout != "0"
+
+    - name: Display message when no updates are available
+      debug:
+        msg: "No new updates to install"
+      when: upgradable_count.stdout == "0"
 
     - name: Upgrade packages
       apt:
