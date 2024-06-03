@@ -2,7 +2,7 @@
 - name: Update Pi-hole
   hosts: host
   become: yes
-  become_method: sudo
+  become_method: su
   become_user: root 
   tasks:
 
