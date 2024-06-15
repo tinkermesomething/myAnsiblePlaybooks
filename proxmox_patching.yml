@@ -53,7 +53,6 @@
          path: /var/run/reboot-required
        register: reboot_required_file
 
-     - name: Display reboot required message
-       debug:
-         msg: "A reboot is required after updates"
-       when: reboot_required_file.stat.exists == true
+     - name: Print reboot requirement message
+       ansible.builtin.debug:
+         msg: "Reboot is {{ 'required' if reboot_required_file.stat.exists else 'not required' }}"
