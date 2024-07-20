@@ -2,6 +2,8 @@
 - name: Synchronize SSL certificates
   hosts: host
   become: yes
+  become_method: su
+  become_user: root 
   vars:
     nginx_server: "10.0.28.2"
     nginx_cert_path: "/opt/nginx-proxy-manager/letsencrypt/live/npm-13"
