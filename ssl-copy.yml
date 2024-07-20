@@ -1,0 +1,51 @@
+---
+- name: Synchronize SSL certificates
+  hosts: host
+  become: yes
+  vars:
+    nginx_server: "10.0.28.2"
+    nginx_cert_path: "/opt/nginx-proxy-manager/letsencrypt/live/npm-13"
+    mailcow_cert_paths:
+      - "/opt/mailcow-dockerized/data/assets/ssl"
+      - "/opt/mailcow-dockerized/data/assets/ssl/mail.angelsomething.com"
+
+  tasks:
+    - name: Ensure SSL directories exist
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop: "{{ mailcow_cert_paths }}"
+
+    - name: Synchronize fullchain.pem to cert.pem
+      synchronize:
+        src: "{{ nginx_cert_path }}/fullchain.pem"
+        dest: "{{ item }}/cert.pem"
+        mode: pull
+      delegate_to: "{{ nginx_server }}"
+      loop: "{{ mailcow_cert_paths }}"
+
+    - name: Synchronize privkey.pem to key.pem
+      synchronize:
+        src: "{{ nginx_cert_path }}/privkey.pem"
+        dest: "{{ item }}/key.pem"
+        mode: pull
+      delegate_to: "{{ nginx_server }}"
+      loop: "{{ mailcow_cert_paths }}"
+
+    - name: Set correct permissions for cert.pem
+      file:
+        path: "{{ item }}/cert.pem"
+        mode: '0644'
+      loop: "{{ mailcow_cert_paths }}"
+
+    - name: Set correct permissions for key.pem
+      file:
+        path: "{{ item }}/key.pem"
+        mode: '0600'
+      loop: "{{ mailcow_cert_paths }}"
+
+    - name: Restart mailcow
+      command: docker-compose restart
+      args:
+        chdir: /opt/mailcow-dockerized
