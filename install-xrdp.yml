@@ -1,0 +1,72 @@
+---
+- name: Install and Configure xrdp for Remote Desktop Access
+  hosts: all
+  become: yes
+  become_method: su
+  become_user: root 
+  vars:
+    rdp_port: 3389
+    desktop_environment: xfce4
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install desktop environment
+      apt:
+        name:
+          - "{{ desktop_environment }}"
+          - xfce4-goodies
+        state: present
+
+    - name: Install xrdp
+      apt:
+        name: xrdp
+        state: present
+
+    - name: Ensure xrdp service is enabled and started
+      systemd:
+        name: xrdp
+        enabled: yes
+        state: started
+
+    - name: Configure xrdp to use Xfce
+      lineinfile:
+        path: /etc/xrdp/startwm.sh
+        line: "{{ item }}"
+        insertafter: "^fi$"
+      loop:
+        - "#xrdp multiple users configuration"
+        - "xfce4-session"
+
+    - name: Add xrdp user to ssl-cert group
+      user:
+        name: xrdp
+        groups: ssl-cert
+        append: yes
+
+    - name: Restart xrdp service
+      systemd:
+        name: xrdp
+        state: restarted
+
+    - name: Install additional packages for better RDP experience
+      apt:
+        name:
+          - xorgxrdp
+          - xrdp-pulseaudio-installer
+        state: present
+
+    - name: Enable RDP sound redirection
+      command: xrdp-build-pulse-modules
+      args:
+        creates: /var/lib/xrdp-pulseaudio-installer
+      notify:
+        - Restart xrdp
+
+  handlers:
+    - name: Restart xrdp
+      systemd:
+        name: xrdp
+        state: restarted
