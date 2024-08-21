@@ -4,14 +4,14 @@
   become: yes
   become_method: su
   become_user: root 
-
-    - name: Disable SSH challenge-response authentication
-      lineinfile:
+  task:
+   - name: Disable SSH challenge-response authentication
+     lineinfile:
         path: /etc/ssh/sshd_config
         regexp: '^ChallengeResponseAuthentication'
         line: 'ChallengeResponseAuthentication no'
         state: present
-      notify:
+     notify:
         - Restart SSH service
 
   handlers:
