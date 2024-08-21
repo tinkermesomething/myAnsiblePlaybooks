@@ -1,0 +1,21 @@
+---
+- name: Add SSH key and disable password authentication
+  hosts: host
+  become: yes
+  become_method: su
+  become_user: root 
+
+    - name: Disable SSH challenge-response authentication
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^ChallengeResponseAuthentication'
+        line: 'ChallengeResponseAuthentication no'
+        state: present
+      notify:
+        - Restart SSH service
+
+  handlers:
+    - name: Restart SSH service
+      service:
+        name: sshd
+        state: restarted
