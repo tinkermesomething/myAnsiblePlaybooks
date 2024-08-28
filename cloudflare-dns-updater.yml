@@ -2,72 +2,74 @@
 - name: Update Cloudflare DNS records
   hosts: host
   vars:
-    log_file: "/var/log/cloudflare-dns-updater.log"
+    cloudflare_api_endpoint: "https://api.cloudflare.com/client/v4"
+
   tasks:
     - name: Get current external IP
       uri:
-        url: https://checkip.amazonaws.com
+        url: "https://api.ipify.org?format=json"
         return_content: yes
       register: external_ip_response
 
-    - name: Set external IP fact
+    - name: Extract external IP
       set_fact:
-        new_ip: "{{ external_ip_response.content | trim }}"
+        current_external_ip: "{{ external_ip_response.json.ip }}"
 
-    - name: Get current A record IP
+    - name: Print current external IP
+      debug:
+        msg: "Current external IP: {{ current_external_ip }}"
+
+    - name: Get current A record for mail.angelsomething.com
       uri:
-        url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_a_record_id }}"
+        url: "{{ cloudflare_api_endpoint }}/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_a_record_id }}"
         headers:
           Authorization: "Bearer {{ cloudflare_api_key }}"
           Content-Type: "application/json"
-      register: current_a_record_response
+      register: a_record_response
 
-    - name: Set current A record IP fact
+    - name: Extract current A record IP
       set_fact:
-        current_a_record_ip: "{{ current_a_record_response.json.result.content }}"
+        current_a_record_ip: "{{ a_record_response.json.result.content }}"
 
-    - name: Log IP status
-      ansible.builtin.copy:
-        content: "{{ ansible_date_time.iso8601 }} - IP is up-to-date ({{ current_a_record_ip }})"
-        dest: "{{ log_file }}"
-        mode: '0644'
-      when: new_ip == current_a_record_ip
+    - name: Print current A record IP
+      debug:
+        msg: "Current A record IP: {{ current_a_record_ip }}"
 
-    - name: Update DNS records
-      block:
-        - name: Log IP change
-          ansible.builtin.copy:
-            content: "{{ ansible_date_time.iso8601 }} - IP changed from {{ current_a_record_ip }} to {{ new_ip }}"
-            dest: "{{ log_file }}"
-            mode: '0644'
+    - name: Check if IP update is needed
+      set_fact:
+        update_needed: "{{ current_external_ip != current_a_record_ip }}"
 
-        - name: Update A record
-          uri:
-            url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_a_record_id }}"
-            method: PUT
-            headers:
-              Authorization: "Bearer {{ cloudflare_api_key }}"
-              Content-Type: "application/json"
-            body_format: json
-            body:
-              type: "A"
-              name: "{{ a_record_name }}"
-              content: "{{ new_ip }}"
-              ttl: 1
-              proxied: false
+    - name: Update A record
+      uri:
+        url: "{{ cloudflare_api_endpoint }}/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_a_record_id }}"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ cloudflare_api_key }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          type: "A"
+          name: "{{ a_record_name }}"
+          content: "{{ current_external_ip }}"
+          ttl: 1
+          proxied: false
+      when: update_needed
 
-        - name: Update TXT record
-          uri:
-            url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_txt_record_id }}"
-            method: PUT
-            headers:
-              Authorization: "Bearer {{ cloudflare_api_key }}"
-              Content-Type: "application/json"
-            body_format: json
-            body:
-              type: "TXT"
-              name: "{{ txt_record_name }}"
-              content: "v=spf1 ip4:{{ new_ip }} -all"
-              ttl: 1
+    - name: Update TXT record
+      uri:
+        url: "{{ cloudflare_api_endpoint }}/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_txt_record_id }}"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ cloudflare_api_key }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          type: "TXT"
+          name: "{{ txt_record_name }}"
+          content: "{{ current_external_ip }}"
+          ttl: 1
+      when: update_needed
 
-      when: new_ip != current_a_record_ip
+    - name: Print update status
+      debug:
+        msg: "{{ 'DNS records updated successfully.' if update_needed else 'No update needed. DNS records are already up to date.' }}"
