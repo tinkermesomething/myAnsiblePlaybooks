@@ -24,7 +24,7 @@
           Authorization: "Bearer {{ cloudflare_api_key }}"
           Content-Type: application/json
         return_content: yes
-      register: current_a_record
+      register: current_a_record_response
 
     - name: Update A record
       uri:
