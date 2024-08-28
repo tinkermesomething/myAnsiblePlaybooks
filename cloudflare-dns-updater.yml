@@ -19,7 +19,7 @@
       debug:
         msg: "Current external IP: {{ current_external_ip }}"
 
-    - name: Get current A record for mail.angelsomething.com
+    - name: Get current A record 
       uri:
         url: "{{ cloudflare_api_endpoint }}/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_a_record_id }}"
         headers:
