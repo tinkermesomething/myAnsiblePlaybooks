@@ -2,70 +2,72 @@
 - name: Update Cloudflare DNS records
   hosts: host
   vars:
-    cloudflare_api_key: "{{ lookup('env', 'CLOUDFLARE_API_KEY') }}"
-    cloudflare_zone_id: "{{ lookup('env', 'CLOUDFLARE_ZONE_ID') }}"
-    cloudflare_a_record_id: "{{ lookup('env', 'CLOUDFLARE_A_RECORD_ID') }}"
-    cloudflare_txt_record_id: "{{ lookup('env', 'CLOUDFLARE_TXT_RECORD_ID') }}"
     log_file: "/var/log/cloudflare-dns-updater.log"
-    a_record_name: "{{ lookup('env', 'A_RECORD_NAME') }}"
-    txt_record_name: "{{ lookup('env', 'TXT_RECORD_NAME') }}"
-
   tasks:
-    - name: Get current public IP
+    - name: Get current external IP
       uri:
         url: https://checkip.amazonaws.com
         return_content: yes
-      register: current_ip
+      register: external_ip_response
+
+    - name: Set external IP fact
+      set_fact:
+        new_ip: "{{ external_ip_response.content | trim }}"
 
     - name: Get current A record IP
       uri:
         url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_a_record_id }}"
         headers:
           Authorization: "Bearer {{ cloudflare_api_key }}"
-          Content-Type: application/json
-        return_content: yes
+          Content-Type: "application/json"
       register: current_a_record_response
 
-    - name: Update A record
-      uri:
-        url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_a_record_id }}"
-        method: PUT
-        headers:
-          Authorization: "Bearer {{ cloudflare_api_key }}"
-          Content-Type: application/json
-        body_format: json
-        body:
-          type: A
-          name: "{{ a_record_name }}"
-          content: "{{ current_ip.content | trim }}"
-          ttl: 1
-          proxied: false
-      when: current_ip.content | trim != current_a_record.json.result.content
-      register: a_record_updated
+    - name: Set current A record IP fact
+      set_fact:
+        current_a_record_ip: "{{ current_a_record_response.json.result.content }}"
 
-    - name: Update TXT record
-      uri:
-        url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_txt_record_id }}"
-        method: PUT
-        headers:
-          Authorization: "Bearer {{ cloudflare_api_key }}"
-          Content-Type: application/json
-        body_format: json
-        body:
-          type: TXT
-          name: "{{ txt_record_name }}"
-          content: "v=spf1 ip4:{{ current_ip.content | trim }} -all"
-          ttl: 1
-      when: current_ip.content | trim != current_a_record.json.result.content
+    - name: Log IP status
+      ansible.builtin.copy:
+        content: "{{ ansible_date_time.iso8601 }} - IP is up-to-date ({{ current_a_record_ip }})"
+        dest: "{{ log_file }}"
+        mode: '0644'
+      when: new_ip == current_a_record_ip
 
-    - name: Log IP change
-      lineinfile:
-        path: "{{ log_file }}"
-        line: "{{ ansible_date_time.iso8601 }} - IP changed from {{ current_a_record.json.result.content }} to {{ current_ip.content | trim }}"
-      when: current_ip.content | trim != current_a_record.json.result.content
+    - name: Update DNS records
+      block:
+        - name: Log IP change
+          ansible.builtin.copy:
+            content: "{{ ansible_date_time.iso8601 }} - IP changed from {{ current_a_record_ip }} to {{ new_ip }}"
+            dest: "{{ log_file }}"
+            mode: '0644'
 
-    - name: Log IP up-to-date
-      lineinfile:
-        path: "{{ log_file }}"
-        line: "{{ ansible_date_time.iso8601 }} - IP is up-to-date ({{ current_a_record.json.result.content }})"
-      when: current_ip.content | trim == current_a_record.json.result.content
+        - name: Update A record
+          uri:
+            url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_a_record_id }}"
+            method: PUT
+            headers:
+              Authorization: "Bearer {{ cloudflare_api_key }}"
+              Content-Type: "application/json"
+            body_format: json
+            body:
+              type: "A"
+              name: "{{ a_record_name }}"
+              content: "{{ new_ip }}"
+              ttl: 1
+              proxied: false
+
+        - name: Update TXT record
+          uri:
+            url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_txt_record_id }}"
+            method: PUT
+            headers:
+              Authorization: "Bearer {{ cloudflare_api_key }}"
+              Content-Type: "application/json"
+            body_format: json
+            body:
+              type: "TXT"
+              name: "{{ txt_record_name }}"
+              content: "v=spf1 ip4:{{ new_ip }} -all"
+              ttl: 1
+
+      when: new_ip != current_a_record_ip
