@@ -1,0 +1,71 @@
+---
+- name: Update Cloudflare DNS records
+  hosts: host
+  vars:
+    cloudflare_api_key: "{{ lookup('env', 'CLOUDFLARE_API_KEY') }}"
+    cloudflare_zone_id: "{{ lookup('env', 'CLOUDFLARE_ZONE_ID') }}"
+    cloudflare_a_record_id: "{{ lookup('env', 'CLOUDFLARE_A_RECORD_ID') }}"
+    cloudflare_txt_record_id: "{{ lookup('env', 'CLOUDFLARE_TXT_RECORD_ID') }}"
+    log_file: "/var/log/cloudflare-dns-updater.log"
+    a_record_name: "{{ lookup('env', 'A_RECORD_NAME') }}"
+    txt_record_name: "{{ lookup('env', 'TXT_RECORD_NAME') }}"
+
+  tasks:
+    - name: Get current public IP
+      uri:
+        url: https://checkip.amazonaws.com
+        return_content: yes
+      register: current_ip
+
+    - name: Get current A record IP
+      uri:
+        url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_a_record_id }}"
+        headers:
+          Authorization: "Bearer {{ cloudflare_api_key }}"
+          Content-Type: application/json
+        return_content: yes
+      register: current_a_record
+
+    - name: Update A record
+      uri:
+        url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_a_record_id }}"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ cloudflare_api_key }}"
+          Content-Type: application/json
+        body_format: json
+        body:
+          type: A
+          name: "{{ a_record_name }}"
+          content: "{{ current_ip.content | trim }}"
+          ttl: 1
+          proxied: false
+      when: current_ip.content | trim != current_a_record.json.result.content
+      register: a_record_updated
+
+    - name: Update TXT record
+      uri:
+        url: "https://api.cloudflare.com/client/v4/zones/{{ cloudflare_zone_id }}/dns_records/{{ cloudflare_txt_record_id }}"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ cloudflare_api_key }}"
+          Content-Type: application/json
+        body_format: json
+        body:
+          type: TXT
+          name: "{{ txt_record_name }}"
+          content: "v=spf1 ip4:{{ current_ip.content | trim }} -all"
+          ttl: 1
+      when: current_ip.content | trim != current_a_record.json.result.content
+
+    - name: Log IP change
+      lineinfile:
+        path: "{{ log_file }}"
+        line: "{{ ansible_date_time.iso8601 }} - IP changed from {{ current_a_record.json.result.content }} to {{ current_ip.content | trim }}"
+      when: current_ip.content | trim != current_a_record.json.result.content
+
+    - name: Log IP up-to-date
+      lineinfile:
+        path: "{{ log_file }}"
+        line: "{{ ansible_date_time.iso8601 }} - IP is up-to-date ({{ current_a_record.json.result.content }})"
+      when: current_ip.content | trim == current_a_record.json.result.content
