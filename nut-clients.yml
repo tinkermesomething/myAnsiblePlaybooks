@@ -1,0 +1,50 @@
+---
+- name: Configure NUT client for UPS monitoring
+  hosts: nut_clients
+  become: yes
+  become_method: su
+  become_user: root 
+  tasks:
+    - name: Install nut-client package
+      apt:
+        name: nut-client
+        state: present
+        update_cache: yes
+
+    - name: Verify UPS connection
+      command: upsc homelab@{{ ups_ip }}
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Configure upsmon.conf
+      lineinfile:
+        path: /etc/nut/upsmon.conf
+        line: 'MONITOR homelab@{{ ups_ip }} 1 observer {{ monitor_password }} slave'
+        regexp: '^MONITOR homelab@'
+        state: present
+      notify:
+        - restart nut-client
+
+    - name: Set netclient mode in nut.conf
+      lineinfile:
+        path: /etc/nut/nut.conf
+        regexp: '^MODE='
+        line: 'MODE=netclient'
+        state: present
+      notify:
+        - restart nut-client
+
+    - name: Ensure proper permissions for nut config
+      file:
+        path: /etc/nut/
+        state: directory
+        mode: '0640'
+        owner: root
+        group: nut
+
+  handlers:
+    - name: restart nut-client
+      systemd:
+        name: nut-client
+        state: restarted
+        enabled: yes
