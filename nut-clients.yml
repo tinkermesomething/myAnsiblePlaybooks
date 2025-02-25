@@ -1,6 +1,6 @@
 ---
 - name: Configure NUT client for UPS monitoring
-  hosts: nut_clients
+  hosts: host
   become: yes
   become_method: su
   become_user: root 
